@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <title>Admin Dashboard</title>
+  <title>Admin Panel</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -13,144 +13,175 @@
 <body>
   <nav>
     <a href="index.html">Ana Sayfa</a>
-    <a href="admin.html">Admin Giriş</a>
     <a href="dashboard.html">Admin Panel</a>
   </nav>
 
-  <div class="container">
-    <h1>Admin Dashboard</h1>
-    <button id="logout-btn" style="float:right;">Çıkış Yap</button>
+  <div class="container" style="max-width: 700px;">
+    <div id="login-section" style="display:none;">
+      <h2>Admin Girişi</h2>
+      <form id="login-form" style="display:flex; flex-direction:column;">
+        <input type="email" id="admin-email" placeholder="Email" required />
+        <input type="password" id="admin-password" placeholder="Şifre" required />
+        <button type="submit">Giriş Yap</button>
+      </form>
+    </div>
 
-    <h2>Hesap Ekle</h2>
-    <form id="add-form" style="max-width:600px;">
-      <input type="text" id="title" placeholder="Başlık" required />
-      <input type="number" id="price" placeholder="Fiyat" required />
-      <input type="text" id="region" placeholder="Bölge" required />
-      <select id="rank" required>
-        <option>IRON</option>
-        <option>BRONZE</option>
-        <option>SILVER</option>
-        <option>GOLD</option>
-        <option>PLATINUM</option>
-        <option>EMERALD</option>
-        <option>DIAMOND</option>
-        <option>MASTER</option>
-        <option>GRANDMASTER</option>
-        <option>CHALLENGER</option>
-      </select>
-      <input type="number" id="champions" placeholder="Şampiyon Sayısı" required />
-      <input type="number" id="skins" placeholder="Skin Sayısı" required />
-      <label for="imageFile">Hesap Görseli (Dosya):</label>
-      <input type="file" id="imageFile" accept="image/*" required />
-      <label><input type="checkbox" id="email_verified" /> E-posta Doğrulandı</label>
-      <button type="submit">Kaydet</button>
-    </form>
+    <div id="admin-section" style="display:none;">
+      <button id="logout-btn" style="float:right;">Çıkış Yap</button>
+      <h1>Admin Dashboard</h1>
 
-    <h2>Mevcut Hesaplar</h2>
-    <div id="accounts-list"></div>
+      <h2>Hesap Ekle</h2>
+      <form id="add-form" style="max-width:600px;">
+        <input type="text" id="title" placeholder="Başlık" required />
+        <input type="number" id="price" placeholder="Fiyat" required />
+        <input type="text" id="region" placeholder="Bölge" required />
+        <select id="rank" required>
+          <option>IRON</option>
+          <option>BRONZE</option>
+          <option>SILVER</option>
+          <option>GOLD</option>
+          <option>PLATINUM</option>
+          <option>EMERALD</option>
+          <option>DIAMOND</option>
+          <option>MASTER</option>
+          <option>GRANDMASTER</option>
+          <option>CHALLENGER</option>
+        </select>
+        <input type="number" id="champions" placeholder="Şampiyon Sayısı" required />
+        <input type="number" id="skins" placeholder="Skin Sayısı" required />
+        <label for="imageFile">Hesap Görseli (Dosya):</label>
+        <input type="file" id="imageFile" accept="image/*" required />
+        <label><input type="checkbox" id="email_verified" /> E-posta Doğrulandı</label>
+        <button type="submit">Kaydet</button>
+      </form>
+
+      <h2>Mevcut Hesaplar</h2>
+      <div id="accounts-list"></div>
+    </div>
   </div>
 
   <script>
-    window.addEventListener("DOMContentLoaded", () => {
-      const logoutBtn = document.getElementById("logout-btn");
-      const addForm = document.getElementById("add-form");
-      const accountsList = document.getElementById("accounts-list");
+    const loginSection = document.getElementById("login-section");
+    const adminSection = document.getElementById("admin-section");
+    const loginForm = document.getElementById("login-form");
+    const logoutBtn = document.getElementById("logout-btn");
+    const accountsList = document.getElementById("accounts-list");
+    const addForm = document.getElementById("add-form");
 
-      auth.onAuthStateChanged(user => {
-        if (!user || user.email !== "meloboost1@gmail.com") {
-          window.location.href = "admin.html";
-        } else {
-          loadAccounts();
+    const adminEmail = "meloboost1@gmail.com";
+
+    auth.onAuthStateChanged(user => {
+      if (user && user.email === adminEmail) {
+        loginSection.style.display = "none";
+        adminSection.style.display = "block";
+        loadAccounts();
+      } else {
+        loginSection.style.display = "block";
+        adminSection.style.display = "none";
+      }
+    });
+
+    loginForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const email = document.getElementById("admin-email").value.trim();
+      const password = document.getElementById("admin-password").value;
+
+      try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        if (user.email !== adminEmail) {
+          alert("Bu kullanıcı admin değil.");
+          await auth.signOut();
         }
-      });
+      } catch (err) {
+        alert("Giriş başarısız: " + err.message);
+      }
+    });
 
-      logoutBtn.addEventListener("click", () => {
-        auth.signOut().then(() => {
-          window.location.href = "admin.html";
+    logoutBtn.addEventListener("click", () => {
+      auth.signOut();
+    });
+
+    function loadAccounts() {
+      accountsList.innerHTML = "Yükleniyor...";
+      db.collection("accounts").orderBy("rankIndex", "asc").get()
+        .then(snapshot => {
+          accountsList.innerHTML = "";
+          if (snapshot.empty) {
+            accountsList.innerHTML = "<p>Henüz hesap eklenmemiş.</p>";
+          } else {
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              const div = document.createElement("div");
+              div.innerHTML = `
+                <strong>${data.title}</strong> - ${data.rank} - ${data.price} TL
+                <button onclick="deleteAccount(event, '${doc.id}')">Sil</button>
+              `;
+              div.style.cursor = "pointer";
+              div.onclick = () => {
+                window.location.href = `account.html?id=${doc.id}`;
+              };
+              accountsList.appendChild(div);
+            });
+          }
+        })
+        .catch(err => {
+          accountsList.innerHTML = "<p>Hesaplar yüklenirken hata oluştu.</p>";
+          console.error(err);
         });
-      });
+    }
 
-      function loadAccounts() {
-        accountsList.innerHTML = "Yükleniyor...";
-        db.collection("accounts").orderBy("rankIndex", "asc").get()
-          .then(snapshot => {
-            accountsList.innerHTML = "";
-            if (snapshot.empty) {
-              accountsList.innerHTML = "<p>Henüz hesap eklenmemiş.</p>";
-            } else {
-              snapshot.forEach(doc => {
-                const data = doc.data();
-                const div = document.createElement("div");
-                div.innerHTML = `
-                  <strong>${data.title}</strong> - ${data.rank} - ${data.price} TL
-                  <button onclick="deleteAccount(event, '${doc.id}')">Sil</button>
-                `;
-                div.style.cursor = "pointer";
-                div.onclick = () => {
-                  window.location.href = `account.html?id=${doc.id}`;
-                };
-                accountsList.appendChild(div);
-              });
-            }
-          })
-          .catch(err => {
-            accountsList.innerHTML = "<p>Hesaplar yüklenirken hata oluştu.</p>";
-            console.error(err);
-          });
+    window.deleteAccount = function(event, id) {
+      event.stopPropagation();
+      if (confirm("Bu hesabı silmek istediğine emin misin?")) {
+        db.collection("accounts").doc(id).delete()
+          .then(() => loadAccounts())
+          .catch(err => alert("Silme hatası: " + err.message));
+      }
+    };
+
+    addForm.addEventListener("submit", async e => {
+      e.preventDefault();
+
+      const rankOrder = [
+        "IRON","BRONZE","SILVER","GOLD","PLATINUM","EMERALD","DIAMOND","MASTER","GRANDMASTER","CHALLENGER"
+      ];
+
+      const rankVal = document.getElementById("rank").value;
+
+      const fileInput = document.getElementById("imageFile");
+      const file = fileInput.files[0];
+      if (!file) {
+        alert("Lütfen görsel seçin.");
+        return;
       }
 
-      window.deleteAccount = function(event, id) {
-        event.stopPropagation(); // buton tıklaması div eventini engelle
-        if (confirm("Bu hesabı silmek istediğine emin misin?")) {
-          db.collection("accounts").doc(id).delete()
-            .then(() => loadAccounts())
-            .catch(err => alert("Silme hatası: " + err.message));
-        }
-      };
+      try {
+        const storageRef = storage.ref();
+        const fileRef = storageRef.child('accounts-images/' + Date.now() + "_" + file.name);
+        await fileRef.put(file);
+        const downloadURL = await fileRef.getDownloadURL();
 
-      addForm.addEventListener("submit", async e => {
-        e.preventDefault();
+        const account = {
+          title: document.getElementById("title").value.trim(),
+          price: Number(document.getElementById("price").value),
+          region: document.getElementById("region").value.trim(),
+          rank: rankVal,
+          rankIndex: rankOrder.indexOf(rankVal),
+          champions: Number(document.getElementById("champions").value),
+          skins: Number(document.getElementById("skins").value),
+          imageUrl: downloadURL,
+          email_verified: document.getElementById("email_verified").checked
+        };
 
-        const rankOrder = [
-          "IRON","BRONZE","SILVER","GOLD","PLATINUM","EMERALD","DIAMOND","MASTER","GRANDMASTER","CHALLENGER"
-        ];
+        await db.collection("accounts").add(account);
+        alert("Hesap kaydedildi.");
+        addForm.reset();
+        loadAccounts();
 
-        const rankVal = document.getElementById("rank").value;
-
-        const fileInput = document.getElementById("imageFile");
-        const file = fileInput.files[0];
-        if (!file) {
-          alert("Lütfen görsel seçin.");
-          return;
-        }
-
-        try {
-          const storageRef = storage.ref();
-          const fileRef = storageRef.child('accounts-images/' + Date.now() + "_" + file.name);
-          await fileRef.put(file);
-          const downloadURL = await fileRef.getDownloadURL();
-
-          const account = {
-            title: document.getElementById("title").value.trim(),
-            price: Number(document.getElementById("price").value),
-            region: document.getElementById("region").value.trim(),
-            rank: rankVal,
-            rankIndex: rankOrder.indexOf(rankVal),
-            champions: Number(document.getElementById("champions").value),
-            skins: Number(document.getElementById("skins").value),
-            imageUrl: downloadURL,
-            email_verified: document.getElementById("email_verified").checked
-          };
-
-          await db.collection("accounts").add(account);
-          alert("Hesap kaydedildi.");
-          addForm.reset();
-          loadAccounts();
-
-        } catch (error) {
-          alert("Yükleme hatası: " + error.message);
-        }
-      });
+      } catch (error) {
+        alert("Yükleme hatası: " + error.message);
+      }
     });
   </script>
 </body>
