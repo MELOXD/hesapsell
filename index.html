@@ -2,17 +2,17 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <title>LOL Hesap Vitrini</title>
+  <title>LOL Hesap Satış</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
   <script src="firebase-config.js"></script>
 </head>
 <body>
   <nav>
     <a href="index.html">Ana Sayfa</a>
-    <a href="admin.html">Admin Giriş</a>
-    <a href="dashboard.html">Admin Panel</a>
+    <span id="user-menu-container" style="margin-left:auto;"></span>
   </nav>
 
   <div class="container">
@@ -20,28 +20,153 @@
     <div id="account-list" class="account-list"></div>
   </div>
 
+  <!-- Login Modal -->
+  <div id="login-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="modal-close" id="login-close">&times;</span>
+      <h2>Giriş Yap</h2>
+      <form id="login-form">
+        <input type="email" id="login-email" placeholder="Email" required />
+        <input type="password" id="login-password" placeholder="Şifre" required />
+        <button type="submit">Giriş Yap</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Register Modal -->
+  <div id="register-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="modal-close" id="register-close">&times;</span>
+      <h2>Kayıt Ol</h2>
+      <form id="register-form">
+        <input type="email" id="register-email" placeholder="Email" required />
+        <input type="password" id="register-password" placeholder="Şifre (6+ karakter)" minlength="6" required />
+        <button type="submit">Kayıt Ol</button>
+      </form>
+    </div>
+  </div>
+
   <script>
-    db.collection("accounts").orderBy("rankIndex", "asc").get().then(snapshot => {
-      const list = document.getElementById("account-list");
-      if (snapshot.empty) {
-        list.innerHTML = "<p>Henüz hesap eklenmemiş.</p>";
+    const userMenuContainer = document.getElementById("user-menu-container");
+
+    // Modalları seç
+    const loginModal = document.getElementById("login-modal");
+    const registerModal = document.getElementById("register-modal");
+
+    const loginClose = document.getElementById("login-close");
+    const registerClose = document.getElementById("register-close");
+
+    // Açma/Kapama fonksiyonları
+    function openLoginModal() {
+      loginModal.style.display = "flex";
+    }
+    function closeLoginModal() {
+      loginModal.style.display = "none";
+    }
+    function openRegisterModal() {
+      registerModal.style.display = "flex";
+    }
+    function closeRegisterModal() {
+      registerModal.style.display = "none";
+    }
+
+    loginClose.onclick = closeLoginModal;
+    registerClose.onclick = closeRegisterModal;
+
+    window.onclick = function(event) {
+      if(event.target === loginModal) closeLoginModal();
+      if(event.target === registerModal) closeRegisterModal();
+    };
+
+    // Firebase auth ve firestore hazır
+    const adminEmail = "meloboost1@gmail.com";
+
+    // Menü oluşturma fonksiyonu
+    function updateUserMenu(user) {
+      if (!user) {
+        // Giriş yok
+        userMenuContainer.innerHTML = `
+          <button id="btn-login">Giriş Yap</button>
+          <button id="btn-register">Kayıt Ol</button>
+        `;
+        document.getElementById("btn-login").onclick = openLoginModal;
+        document.getElementById("btn-register").onclick = openRegisterModal;
       } else {
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const card = document.createElement("a");
-          card.className = "account-card";
-          card.href = `account.html?id=${doc.id}`;
-          card.innerHTML = `
-            <img src="${data.imageUrl || data.image}" alt="Hesap Görseli" />
-            <h2>${data.title}</h2>
-            <p><strong>Lig:</strong> ${data.rank}</p>
-            <p><strong>Fiyat:</strong> ${data.price} TL</p>
-          `;
-          list.appendChild(card);
-        });
+        // Giriş var
+        const isAdmin = user.email === adminEmail;
+        userMenuContainer.innerHTML = `
+          <span style="margin-right:15px;">Hoşgeldin, ${user.email}</span>
+          ${isAdmin ? '<a href="admin/dashboard.html" style="color:#fff; margin-right:15px;">Admin Panel</a>' : ''}
+          <button id="btn-logout">Çıkış Yap</button>
+        `;
+        document.getElementById("btn-logout").onclick = () => auth.signOut();
       }
-    }).catch(err => {
-      console.error("Firestore verisi okunamadı:", err);
+    }
+
+    // Auth state listener
+    auth.onAuthStateChanged(user => {
+      updateUserMenu(user);
+    });
+
+    // Giriş formu
+    const loginForm = document.getElementById("login-form");
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("login-email").value.trim();
+      const password = document.getElementById("login-password").value;
+
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+        closeLoginModal();
+      } catch (err) {
+        alert("Giriş başarısız: " + err.message);
+      }
+    });
+
+    // Kayıt formu
+    const registerForm = document.getElementById("register-form");
+    registerForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("register-email").value.trim();
+      const password = document.getElementById("register-password").value;
+
+      try {
+        await auth.createUserWithEmailAndPassword(email, password);
+        alert("Kayıt başarılı. Giriş yapabilirsiniz.");
+        closeRegisterModal();
+      } catch (err) {
+        alert("Kayıt başarısız: " + err.message);
+      }
+    });
+
+    // Hesapları listele
+    function renderAccounts(accounts) {
+      const list = document.getElementById("account-list");
+      list.innerHTML = "";
+      if (accounts.length === 0) {
+        list.innerHTML = "<p>Henüz hesap eklenmemiş.</p>";
+        return;
+      }
+      accounts.forEach(doc => {
+        const data = doc.data();
+        const card = document.createElement("a");
+        card.className = "account-card";
+        card.href = `account.html?id=${doc.id}`;
+        card.innerHTML = `
+          <img src="${data.imageUrl}" alt="Hesap Görseli" />
+          <h2>${data.title}</h2>
+          <p><strong>Lig:</strong> ${data.rank}</p>
+          <p><strong>Fiyat:</strong> ${data.price} TL</p>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    // Verileri Firestore’dan çek
+    db.collection("accounts").orderBy("rankIndex", "asc").onSnapshot(snapshot => {
+      renderAccounts(snapshot.docs);
+    }, err => {
+      console.error(err);
       document.getElementById("account-list").innerHTML = "<p>Veri alınırken hata oluştu.</p>";
     });
   </script>
