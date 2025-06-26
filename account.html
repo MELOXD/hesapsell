@@ -11,61 +11,43 @@
 <body>
   <nav>
     <a href="index.html">Ana Sayfa</a>
-    <span id="user-menu-container" style="margin-left:auto;"></span>
+    <span id="user-menu-container"></span>
   </nav>
 
-  <div class="container">
-    <div id="account-detail"></div>
-    <p><a href="index.html" style="color:#00bcd4;">← Geri Dön</a></p>
+  <div class="container" id="details-container">
+    <h1>Yükleniyor...</h1>
   </div>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
-
-    function updateUserMenu(user) {
-      const container = document.getElementById("user-menu-container");
-      if (!user) {
-        container.innerHTML = `<a href="index.html" style="color:#fff;">Ana Sayfa</a>`;
-      } else {
-        const isAdmin = user.email === "meloboost1@gmail.com";
-        container.innerHTML = `
-          Hoşgeldin, ${user.email}
-          ${isAdmin ? '<a href="admin/dashboard.html" style="color:#fff; margin-left:15px;">Admin Panel</a>' : ''}
-          <button id="btn-logout" style="margin-left:15px;">Çıkış Yap</button>
-        `;
-        document.getElementById("btn-logout").onclick = () => auth.signOut();
-      }
-    }
-
-    auth.onAuthStateChanged(user => {
-      updateUserMenu(user);
-    });
+    const detailsContainer = document.getElementById("details-container");
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get("id");
 
     if (!id) {
-      document.getElementById("account-detail").innerHTML = "<p>Hesap ID bulunamadı.</p>";
+      detailsContainer.innerHTML = "<p>Geçersiz hesap ID'si.</p>";
     } else {
-      db.collection("accounts").doc(id).get().then(doc => {
-        if (!doc.exists) {
-          document.getElementById("account-detail").innerHTML = "<p>Hesap bulunamadı.</p>";
-          return;
-        }
-        const data = doc.data();
-        const detail = document.getElementById("account-detail");
-        detail.innerHTML = `
-          <h1>${data.title}</h1>
-          <img src="${data.imageUrl}" alt="Hesap Görseli" style="width:100%; max-width:400px; border-radius:10px;" />
-          <p><strong>Fiyat:</strong> ${data.price} TL</p>
-          <p><strong>Bölge:</strong> ${data.region}</p>
-          <p><strong>Lig:</strong> ${data.rank}</p>
-          <p><strong>Şampiyon Sayısı:</strong> ${data.champions}</p>
-          <p><strong>Skin Sayısı:</strong> ${data.skins}</p>
-          <p><strong>E-posta Doğrulandı:</strong> ${data.email_verified ? "Evet" : "Hayır"}</p>
-        `;
-      }).catch(err => {
-        console.error("Veri alınamadı:", err);
-        document.getElementById("account-detail").innerHTML = "<p>Veri alınırken hata oluştu.</p>";
-      });
+      db.collection("accounts").doc(id).get()
+        .then(doc => {
+          if(!doc.exists) {
+            detailsContainer.innerHTML = "<p>Hesap bulunamadı.</p>";
+            return;
+          }
+          const data = doc.data();
+          detailsContainer.innerHTML = `
+            <h1>${data.title}</h1>
+            <img src="${data.imageUrl}" alt="Hesap Görseli" style="max-width:100%; border-radius:12px; margin-bottom:15px;" />
+            <p><strong>Fiyat:</strong> ${data.price} TL</p>
+            <p><strong>Bölge:</strong> ${data.region}</p>
+            <p><strong>Lig:</strong> ${data.rank}</p>
+            <p><strong>Şampiyon Sayısı:</strong> ${data.champions}</p>
+            <p><strong>Skin Sayısı:</strong> ${data.skins}</p>
+            <p><strong>E-posta Doğrulandı:</strong> ${data.email_verified ? "Evet" : "Hayır"}</p>
+          `;
+        })
+        .catch(err => {
+          detailsContainer.innerHTML = "<p>Hesap yüklenirken hata oluştu.</p>";
+          console.error(err);
+        });
     }
   </script>
 </body>
