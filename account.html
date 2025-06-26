@@ -1,36 +1,54 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Hesap Detayları</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
   <script src="firebase-config.js"></script>
 </head>
 <body>
+  <nav>
+    <a href="index.html">Ana Sayfa</a>
+    <a href="admin.html">Admin Giriş</a>
+    <a href="dashboard.html">Admin Panel</a>
+  </nav>
+
   <div class="container">
     <div id="account-detail"></div>
+    <p><a href="index.html" style="color:#00bcd4;">← Geri Dön</a></p>
   </div>
+
   <script>
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
 
-    db.collection("accounts").doc(id).get().then(doc => {
-      const data = doc.data();
-      const detail = document.getElementById("account-detail");
-      detail.innerHTML = `
-        <h1>${data.title}</h1>
-        <img src="${data.image}" style="width:100%; max-width:400px; border-radius:10px;">
-        <p><strong>Fiyat:</strong> ${data.price} TL</p>
-        <p><strong>Bölge:</strong> ${data.region}</p>
-        <p><strong>Lig:</strong> ${data.rank}</p>
-        <p><strong>Şampiyon:</strong> ${data.champions}</p>
-        <p><strong>Skin:</strong> ${data.skins}</p>
-        <p><strong>E-Posta:</strong> ${data.email_verified ? "Doğrulandı" : "Yok"}</p>
-        <a href="index.html">← Geri Dön</a>
-      `;
-    });
+    if (!id) {
+      document.getElementById("account-detail").innerHTML = "<p>Hesap ID bulunamadı.</p>";
+    } else {
+      db.collection("accounts").doc(id).get().then(doc => {
+        if (!doc.exists) {
+          document.getElementById("account-detail").innerHTML = "<p>Hesap bulunamadı.</p>";
+          return;
+        }
+        const data = doc.data();
+        const detail = document.getElementById("account-detail");
+        detail.innerHTML = `
+          <h1>${data.title}</h1>
+          <img src="${data.imageUrl || data.image}" alt="Hesap Görseli" style="width:100%; max-width:400px; border-radius:10px;" />
+          <p><strong>Fiyat:</strong> ${data.price} TL</p>
+          <p><strong>Bölge:</strong> ${data.region}</p>
+          <p><strong>Lig:</strong> ${data.rank}</p>
+          <p><strong>Şampiyon Sayısı:</strong> ${data.champions}</p>
+          <p><strong>Skin Sayısı:</strong> ${data.skins}</p>
+          <p><strong>E-posta Doğrulandı:</strong> ${data.email_verified ? "Evet" : "Hayır"}</p>
+        `;
+      }).catch(err => {
+        console.error("Veri alınamadı:", err);
+        document.getElementById("account-detail").innerHTML = "<p>Veri alınırken hata oluştu.</p>";
+      });
+    }
   </script>
 </body>
 </html>
