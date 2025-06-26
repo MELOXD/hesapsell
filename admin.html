@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Admin Giriş</h1>
+
+    <form id="login-form">
+      <input type="email" id="admin-email" placeholder="Email" required />
+      <input type="password" id="admin-password" placeholder="Şifre" required />
+      <button type="submit">Giriş Yap</button>
+    </form>
+
+    <div id="admin-panel" style="display: none;">
+      <h2>Hesap Ekle</h2>
+      <form id="add-form">
+        <!-- Hesap bilgileri giriş alanları -->
+        <input type="text" id="title" placeholder="Başlık" required />
+        <input type="text" id="price" placeholder="Fiyat" required />
+        <input type="text" id="region" placeholder="Bölge" required />
+        <select id="rank">
+          <option>IRON</option>
+          <option>BRONZE</option>
+          <option>SILVER</option>
+          <option>GOLD</option>
+          <option>PLATINUM</option>
+          <option>EMERALD</option>
+          <option>DIAMOND</option>
+          <option>MASTER</option>
+          <option>GRANDMASTER</option>
+          <option>CHALLENGER</option>
+        </select>
+        <input type="number" id="champions" placeholder="Şampiyon Sayısı" required />
+        <input type="number" id="skins" placeholder="Skin Sayısı" required />
+        <input type="url" id="image" placeholder="Hesap Görseli URL" required />
+        <label><input type="checkbox" id="email_verified" /> Doğrulandı</label>
+        <button type="submit">Kaydet</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
