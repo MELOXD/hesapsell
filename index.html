@@ -2,173 +2,153 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <title>LOL Hesap Satış</title>
+  <title>LoL Hesap Satış</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
   <script src="firebase-config.js"></script>
 </head>
 <body>
   <nav>
     <a href="index.html">Ana Sayfa</a>
-    <span id="user-menu-container" style="margin-left:auto;"></span>
+    <span id="user-menu-container"></span>
   </nav>
 
   <div class="container">
-    <h1>Satılık LOL Hesapları</h1>
-    <div id="account-list" class="account-list"></div>
-  </div>
+    <h1>LoL Hesap Satış Sitesi</h1>
 
-  <!-- Login Modal -->
-  <div id="login-modal" class="modal" style="display:none;">
-    <div class="modal-content">
-      <span class="modal-close" id="login-close">&times;</span>
+    <div id="auth-section">
+      <h2>Kayıt Ol</h2>
+      <form id="register-form">
+        <input type="email" id="register-email" placeholder="E-posta" required />
+        <input type="password" id="register-password" placeholder="Şifre" required minlength="6" />
+        <button type="submit">Kayıt Ol</button>
+      </form>
+
       <h2>Giriş Yap</h2>
       <form id="login-form">
-        <input type="email" id="login-email" placeholder="Email" required />
+        <input type="email" id="login-email" placeholder="E-posta" required />
         <input type="password" id="login-password" placeholder="Şifre" required />
         <button type="submit">Giriş Yap</button>
       </form>
     </div>
-  </div>
 
-  <!-- Register Modal -->
-  <div id="register-modal" class="modal" style="display:none;">
-    <div class="modal-content">
-      <span class="modal-close" id="register-close">&times;</span>
-      <h2>Kayıt Ol</h2>
-      <form id="register-form">
-        <input type="email" id="register-email" placeholder="Email" required />
-        <input type="password" id="register-password" placeholder="Şifre (6+ karakter)" minlength="6" required />
-        <button type="submit">Kayıt Ol</button>
-      </form>
-    </div>
+    <hr style="margin: 30px 0;" />
+
+    <h2>Satılık Hesaplar</h2>
+    <div id="accounts-list"></div>
   </div>
 
   <script>
-    const userMenuContainer = document.getElementById("user-menu-container");
-
-    // Modalları seç
-    const loginModal = document.getElementById("login-modal");
-    const registerModal = document.getElementById("register-modal");
-
-    const loginClose = document.getElementById("login-close");
-    const registerClose = document.getElementById("register-close");
-
-    // Açma/Kapama fonksiyonları
-    function openLoginModal() {
-      loginModal.style.display = "flex";
-    }
-    function closeLoginModal() {
-      loginModal.style.display = "none";
-    }
-    function openRegisterModal() {
-      registerModal.style.display = "flex";
-    }
-    function closeRegisterModal() {
-      registerModal.style.display = "none";
-    }
-
-    loginClose.onclick = closeLoginModal;
-    registerClose.onclick = closeRegisterModal;
-
-    window.onclick = function(event) {
-      if(event.target === loginModal) closeLoginModal();
-      if(event.target === registerModal) closeRegisterModal();
-    };
-
-    // Firebase auth ve firestore hazır
     const adminEmail = "meloboost1@gmail.com";
+    const userMenuContainer = document.getElementById("user-menu-container");
+    const authSection = document.getElementById("auth-section");
+    const accountsList = document.getElementById("accounts-list");
 
-    // Menü oluşturma fonksiyonu
-    function updateUserMenu(user) {
-      if (!user) {
-        // Giriş yok
-        userMenuContainer.innerHTML = `
-          <button id="btn-login">Giriş Yap</button>
-          <button id="btn-register">Kayıt Ol</button>
-        `;
-        document.getElementById("btn-login").onclick = openLoginModal;
-        document.getElementById("btn-register").onclick = openRegisterModal;
-      } else {
-        // Giriş var
-        const isAdmin = user.email === adminEmail;
-        userMenuContainer.innerHTML = `
-          <span style="margin-right:15px;">Hoşgeldin, ${user.email}</span>
-          ${isAdmin ? '<a href="admin/dashboard.html" style="color:#fff; margin-right:15px;">Admin Panel</a>' : ''}
-          <button id="btn-logout">Çıkış Yap</button>
-        `;
-        document.getElementById("btn-logout").onclick = () => auth.signOut();
-      }
-    }
-
-    // Auth state listener
-    auth.onAuthStateChanged(user => {
-      updateUserMenu(user);
-    });
-
-    // Giriş formu
-    const loginForm = document.getElementById("login-form");
-    loginForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const email = document.getElementById("login-email").value.trim();
-      const password = document.getElementById("login-password").value;
-
-      try {
-        await auth.signInWithEmailAndPassword(email, password);
-        closeLoginModal();
-      } catch (err) {
-        alert("Giriş başarısız: " + err.message);
-      }
-    });
-
-    // Kayıt formu
     const registerForm = document.getElementById("register-form");
-    registerForm.addEventListener("submit", async (e) => {
+    const loginForm = document.getElementById("login-form");
+
+    // Auth durum değişimini dinle
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        authSection.style.display = "none";
+        userMenuContainer.innerHTML = `
+          Hoşgeldin, ${user.email} 
+          <button id="btn-logout">Çıkış Yap</button>
+          ${user.email === adminEmail ? '<a href="admin/dashboard.html" style="margin-left:15px;color:#ecf0f1;font-weight:600;">Admin Panel</a>' : ''}
+        `;
+
+        document.getElementById("btn-logout").onclick = () => auth.signOut();
+
+        // Admin ise admin paneline otomatik yönlendirebilirsin dilersen:
+        // if(user.email === adminEmail) window.location.href = "admin/dashboard.html";
+
+      } else {
+        authSection.style.display = "block";
+        userMenuContainer.innerHTML = "";
+      }
+      loadAccounts();
+    });
+
+    registerForm.addEventListener("submit", e => {
       e.preventDefault();
       const email = document.getElementById("register-email").value.trim();
       const password = document.getElementById("register-password").value;
 
-      try {
-        await auth.createUserWithEmailAndPassword(email, password);
-        alert("Kayıt başarılı. Giriş yapabilirsiniz.");
-        closeRegisterModal();
-      } catch (err) {
-        alert("Kayıt başarısız: " + err.message);
-      }
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(() => alert("Kayıt başarılı! Giriş yapabilirsiniz."))
+        .catch(err => alert("Kayıt hatası: " + err.message));
+    });
+
+    loginForm.addEventListener("submit", e => {
+      e.preventDefault();
+      const email = document.getElementById("login-email").value.trim();
+      const password = document.getElementById("login-password").value;
+
+      auth.signInWithEmailAndPassword(email, password)
+        .catch(err => alert("Giriş hatası: " + err.message));
     });
 
     // Hesapları listele
-    function renderAccounts(accounts) {
-      const list = document.getElementById("account-list");
-      list.innerHTML = "";
-      if (accounts.length === 0) {
-        list.innerHTML = "<p>Henüz hesap eklenmemiş.</p>";
-        return;
-      }
-      accounts.forEach(doc => {
-        const data = doc.data();
-        const card = document.createElement("a");
-        card.className = "account-card";
-        card.href = `account.html?id=${doc.id}`;
-        card.innerHTML = `
-          <img src="${data.imageUrl}" alt="Hesap Görseli" />
-          <h2>${data.title}</h2>
-          <p><strong>Lig:</strong> ${data.rank}</p>
-          <p><strong>Fiyat:</strong> ${data.price} TL</p>
-        `;
-        list.appendChild(card);
-      });
+    function loadAccounts() {
+      accountsList.innerHTML = "Yükleniyor...";
+      const rankOrder = [
+        "IRON","BRONZE","SILVER","GOLD","PLATINUM","EMERALD","DIAMOND","MASTER","GRANDMASTER","CHALLENGER"
+      ];
+      db.collection("accounts").orderBy("rankIndex", "asc").get()
+        .then(snapshot => {
+          accountsList.innerHTML = "";
+          if (snapshot.empty) {
+            accountsList.innerHTML = "<p>Henüz hesap eklenmemiş.</p>";
+            return;
+          }
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const div = document.createElement("div");
+            div.innerHTML = `
+              <div style="flex-grow:1;">
+                <strong>${data.title}</strong> — ${data.rank} — ${data.price} TL
+              </div>
+              <button onclick="event.stopPropagation(); deleteAccount('${doc.id}')">Sil</button>
+            `;
+            div.style.display = "flex";
+            div.style.justifyContent = "space-between";
+            div.style.alignItems = "center";
+            div.style.cursor = "pointer";
+            div.style.padding = "10px";
+            div.style.border = "1px solid #ccc";
+            div.style.borderRadius = "8px";
+            div.style.marginBottom = "10px";
+
+            div.onclick = () => {
+              window.location.href = `account.html?id=${doc.id}`;
+            };
+
+            accountsList.appendChild(div);
+          });
+        })
+        .catch(err => {
+          accountsList.innerHTML = "<p>Hesaplar yüklenirken hata oluştu.</p>";
+          console.error(err);
+        });
     }
 
-    // Verileri Firestore’dan çek
-    db.collection("accounts").orderBy("rankIndex", "asc").onSnapshot(snapshot => {
-      renderAccounts(snapshot.docs);
-    }, err => {
-      console.error(err);
-      document.getElementById("account-list").innerHTML = "<p>Veri alınırken hata oluştu.</p>";
-    });
+    function deleteAccount(id) {
+      // Sadece admin silsin, admin olmayanlar butonu göremiyor ama ekstra kontrol:
+      if(!auth.currentUser || auth.currentUser.email !== adminEmail){
+        alert("Bu işlemi yapmaya yetkiniz yok.");
+        return;
+      }
+      if(confirm("Hesabı silmek istediğinize emin misiniz?")){
+        db.collection("accounts").doc(id).delete()
+          .then(() => {
+            loadAccounts();
+          })
+          .catch(err => alert("Silme hatası: " + err.message));
+      }
+    }
   </script>
 </body>
 </html>
