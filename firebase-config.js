@@ -1,3 +1,4 @@
+// firebase-config.js
 const firebaseConfig = {
   apiKey: "AIzaSyCihxphcfNsfttojsRJ-OcYgGt9zamZZHM",
   authDomain: "lol-hesapsell.firebaseapp.com",
@@ -11,3 +12,4 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+const storage = firebase.storage();
