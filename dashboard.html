@@ -3,142 +3,142 @@
 <head>
   <meta charset="UTF-8" />
   <title>Admin Panel</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="../style.css" />
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
-  <script src="firebase-config.js"></script>
+  <script src="../firebase-config.js"></script>
 </head>
 <body>
   <nav>
-    <a href="index.html">Ana Sayfa</a>
-    <a href="dashboard.html">Admin Panel</a>
+    <a href="../index.html">Ana Sayfa</a>
+    <span id="user-menu-container" style="margin-left:auto;"></span>
   </nav>
 
   <div class="container" style="max-width: 700px;">
-    <div id="login-section" style="display:none;">
-      <h2>Admin Girişi</h2>
-      <form id="login-form" style="display:flex; flex-direction:column;">
-        <input type="email" id="admin-email" placeholder="Email" required />
-        <input type="password" id="admin-password" placeholder="Şifre" required />
-        <button type="submit">Giriş Yap</button>
-      </form>
-    </div>
+    <h1>Admin Dashboard</h1>
+    <button id="logout-btn" style="float:right;">Çıkış Yap</button>
 
-    <div id="admin-section" style="display:none;">
-      <button id="logout-btn" style="float:right;">Çıkış Yap</button>
-      <h1>Admin Dashboard</h1>
+    <h2>Hesap Ekle</h2>
+    <form id="add-form" style="max-width:600px;">
+      <input type="text" id="title" placeholder="Başlık" required />
+      <input type="number" id="price" placeholder="Fiyat" required />
+      <input type="text" id="region" placeholder="Bölge" required />
+      <select id="rank" required>
+        <option>IRON</option>
+        <option>BRONZE</option>
+        <option>SILVER</option>
+        <option>GOLD</option>
+        <option>PLATINUM</option>
+        <option>EMERALD</option>
+        <option>DIAMOND</option>
+        <option>MASTER</option>
+        <option>GRANDMASTER</option>
+        <option>CHALLENGER</option>
+      </select>
+      <input type="number" id="champions" placeholder="Şampiyon Sayısı" required />
+      <input type="number" id="skins" placeholder="Skin Sayısı" required />
+      <label for="imageFile">Hesap Görseli (Dosya):</label>
+      <input type="file" id="imageFile" accept="image/*" required />
+      <label><input type="checkbox" id="email_verified" /> E-posta Doğrulandı</label>
+      <button type="submit">Kaydet</button>
+    </form>
 
-      <h2>Hesap Ekle</h2>
-      <form id="add-form" style="max-width:600px;">
-        <input type="text" id="title" placeholder="Başlık" required />
-        <input type="number" id="price" placeholder="Fiyat" required />
-        <input type="text" id="region" placeholder="Bölge" required />
-        <select id="rank" required>
-          <option>IRON</option>
-          <option>BRONZE</option>
-          <option>SILVER</option>
-          <option>GOLD</option>
-          <option>PLATINUM</option>
-          <option>EMERALD</option>
-          <option>DIAMOND</option>
-          <option>MASTER</option>
-          <option>GRANDMASTER</option>
-          <option>CHALLENGER</option>
-        </select>
-        <input type="number" id="champions" placeholder="Şampiyon Sayısı" required />
-        <input type="number" id="skins" placeholder="Skin Sayısı" required />
-        <label for="imageFile">Hesap Görseli (Dosya):</label>
-        <input type="file" id="imageFile" accept="image/*" required />
-        <label><input type="checkbox" id="email_verified" /> E-posta Doğrulandı</label>
-        <button type="submit">Kaydet</button>
-      </form>
-
-      <h2>Mevcut Hesaplar</h2>
-      <div id="accounts-list"></div>
-    </div>
+    <h2>Mevcut Hesaplar</h2>
+    <div id="accounts-list"></div>
   </div>
 
   <script>
-    const loginSection = document.getElementById("login-section");
-    const adminSection = document.getElementById("admin-section");
-    const loginForm = document.getElementById("login-form");
-    const logoutBtn = document.getElementById("logout-btn");
-    const accountsList = document.getElementById("accounts-list");
-    const addForm = document.getElementById("add-form");
-
     const adminEmail = "meloboost1@gmail.com";
 
+    const userMenuContainer = document.getElementById("user-menu-container");
+    const logoutBtn = document.getElementById("logout-btn");
+    const addForm = document.getElementById("add-form");
+    const accountsList = document.getElementById("accounts-list");
+
+    // Kullanıcı kontrolü ve yetkilendirme
     auth.onAuthStateChanged(user => {
-      if (user && user.email === adminEmail) {
-        loginSection.style.display = "none";
-        adminSection.style.display = "block";
-        loadAccounts();
-      } else {
-        loginSection.style.display = "block";
-        adminSection.style.display = "none";
+      if (!user) {
+        // Giriş yapılmamışsa ana sayfaya yönlendir
+        window.location.href = "../index.html";
+        return;
       }
+
+      if (user.email !== adminEmail) {
+        // Admin değilse ana sayfaya yönlendir
+        alert("Bu sayfaya erişim yetkiniz yok.");
+        auth.signOut();
+        window.location.href = "../index.html";
+        return;
+      }
+
+      // Admin ise kullanıcı menüsünü göster
+      userMenuContainer.innerHTML = `
+        Hoşgeldin, ${user.email}
+        <button id="btn-logout" style="margin-left:15px;">Çıkış Yap</button>
+      `;
+
+      document.getElementById("btn-logout").onclick = () => auth.signOut();
+
+      // Hesapları yükle
+      loadAccounts();
     });
 
-    loginForm.addEventListener("submit", async e => {
-      e.preventDefault();
-      const email = document.getElementById("admin-email").value.trim();
-      const password = document.getElementById("admin-password").value;
-
-      try {
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-        if (user.email !== adminEmail) {
-          alert("Bu kullanıcı admin değil.");
-          await auth.signOut();
-        }
-      } catch (err) {
-        alert("Giriş başarısız: " + err.message);
-      }
-    });
-
-    logoutBtn.addEventListener("click", () => {
+    logoutBtn.onclick = () => {
       auth.signOut();
-    });
+    };
 
     function loadAccounts() {
       accountsList.innerHTML = "Yükleniyor...";
+      const rankOrder = [
+        "IRON","BRONZE","SILVER","GOLD","PLATINUM","EMERALD","DIAMOND","MASTER","GRANDMASTER","CHALLENGER"
+      ];
       db.collection("accounts").orderBy("rankIndex", "asc").get()
         .then(snapshot => {
           accountsList.innerHTML = "";
           if (snapshot.empty) {
             accountsList.innerHTML = "<p>Henüz hesap eklenmemiş.</p>";
-          } else {
-            snapshot.forEach(doc => {
-              const data = doc.data();
-              const div = document.createElement("div");
-              div.innerHTML = `
-                <strong>${data.title}</strong> - ${data.rank} - ${data.price} TL
-                <button onclick="deleteAccount(event, '${doc.id}')">Sil</button>
-              `;
-              div.style.cursor = "pointer";
-              div.onclick = () => {
-                window.location.href = `account.html?id=${doc.id}`;
-              };
-              accountsList.appendChild(div);
-            });
+            return;
           }
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const div = document.createElement("div");
+            div.textContent = `${data.title} - ${data.rank} - ${data.price} TL`;
+            div.style.cursor = "pointer";
+            div.style.padding = "8px";
+            div.style.border = "1px solid #333";
+            div.style.marginBottom = "8px";
+
+            // Tıklanınca detay sayfasına git
+            div.onclick = () => {
+              window.location.href = `../account.html?id=${doc.id}`;
+            };
+
+            // Silme butonu
+            const delBtn = document.createElement("button");
+            delBtn.textContent = "Sil";
+            delBtn.style.marginLeft = "15px";
+            delBtn.onclick = (e) => {
+              e.stopPropagation();
+              if(confirm("Bu hesabı silmek istediğinize emin misiniz?")) {
+                db.collection("accounts").doc(doc.id).delete()
+                  .then(() => {
+                    loadAccounts();
+                  })
+                  .catch(err => alert("Silme hatası: " + err.message));
+              }
+            };
+
+            div.appendChild(delBtn);
+            accountsList.appendChild(div);
+          });
         })
         .catch(err => {
           accountsList.innerHTML = "<p>Hesaplar yüklenirken hata oluştu.</p>";
           console.error(err);
         });
     }
-
-    window.deleteAccount = function(event, id) {
-      event.stopPropagation();
-      if (confirm("Bu hesabı silmek istediğine emin misin?")) {
-        db.collection("accounts").doc(id).delete()
-          .then(() => loadAccounts())
-          .catch(err => alert("Silme hatası: " + err.message));
-      }
-    };
 
     addForm.addEventListener("submit", async e => {
       e.preventDefault();
