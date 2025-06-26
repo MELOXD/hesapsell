@@ -1,163 +1,119 @@
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #121212;
-  color: #fff;
-  margin: 0;
-  padding: 0;
-}
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Poppins:wght@400;600&display=swap');
 
-.container {
-  max-width: 1000px;
-  margin: 40px auto;
-  padding: 20px;
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #f0f2f5;
+  margin: 0;
+  color: #333;
 }
 
 nav {
-  background: #00bcd4;
-  padding: 12px 20px;
+  background-color: #2c3e50;
+  padding: 10px 20px;
   display: flex;
-  gap: 20px;
   align-items: center;
 }
 
-nav a, nav button {
-  color: #fff;
+nav a {
+  color: #ecf0f1;
+  margin-right: 20px;
   text-decoration: none;
-  font-weight: bold;
-  background: none;
+  font-weight: 600;
+  font-size: 16px;
+  transition: color 0.3s;
+}
+
+nav a:hover {
+  color: #3498db;
+}
+
+nav #user-menu-container {
+  margin-left: auto;
+  color: #ecf0f1;
+  font-weight: 600;
+}
+
+button {
+  cursor: pointer;
   border: none;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-nav a:hover, nav button:hover {
-  text-decoration: underline;
-}
-
-.account-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-.account-card {
-  background: #222;
-  border-radius: 10px;
-  padding: 15px;
-  text-decoration: none;
-  color: #fff;
-  width: 220px;
-  box-sizing: border-box;
-  transition: background-color 0.2s ease;
-  cursor: pointer;
-}
-
-.account-card:hover {
-  background: #00bcd4;
-  color: #121212;
-}
-
-.account-card img {
-  width: 100%;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin-bottom: 10px;
-}
-
-form input, form select, form button {
-  padding: 10px;
-  margin-bottom: 15px;
+  background-color: #3498db;
+  color: white;
+  padding: 8px 16px;
   border-radius: 6px;
-  border: none;
-  font-size: 1rem;
-  width: 100%;
-  box-sizing: border-box;
+  font-weight: 600;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #2980b9;
+}
+
+.container {
+  max-width: 900px;
+  margin: 30px auto;
+  background: white;
+  padding: 25px 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+}
+
+h1, h2 {
+  color: #2c3e50;
 }
 
 form input, form select {
-  background: #333;
-  color: #fff;
-}
-
-form button {
-  background: #00bcd4;
-  color: #fff;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-form button:hover {
-  background: #0097a7;
-}
-
-label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #ccc;
-  margin-bottom: 15px;
-}
-
-#accounts-list > div {
-  background: #222;
-  margin-bottom: 12px;
-  padding: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  margin: 10px 0 20px;
+  border: 1.8px solid #ccc;
   border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+}
+
+form input:focus, form select:focus {
+  border-color: #3498db;
+  outline: none;
+}
+
+#accounts-list div {
+  background-color: #e8f0fe;
+  margin-bottom: 12px;
+  padding: 12px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid #333;
-  cursor: pointer;
 }
 
-#accounts-list button {
-  background: #e53935;
-  border: none;
-  color: white;
-  padding: 6px 12px;
+#accounts-list div:hover {
+  background-color: #d0e4fc;
+}
+
+#accounts-list div button {
+  background-color: #e74c3c;
+  padding: 5px 10px;
+  font-size: 13px;
   border-radius: 6px;
-  font-weight: bold;
-  transition: background-color 0.2s ease;
+  margin-left: 15px;
+  transition: background-color 0.3s;
 }
 
-#accounts-list button:hover {
-  background: #b71c1c;
+#accounts-list div button:hover {
+  background-color: #c0392b;
 }
 
-.modal {
-  position: fixed;
-  top:0; left:0; right:0; bottom:0;
-  background: rgba(0,0,0,0.7);
-  display: flex;
-  align-items:center;
-  justify-content: center;
-  z-index: 999;
+label {
+  font-weight: 500;
+  font-size: 14px;
+  display: block;
+  margin-top: -15px;
+  margin-bottom: 10px;
 }
 
-.modal-content {
-  background: #222;
-  padding: 20px;
-  border-radius: 10px;
-  width: 350px;
-  box-sizing: border-box;
-  color: white;
-  position: relative;
-}
-
-.modal-content h2 {
-  margin-top: 0;
-}
-
-.modal-close {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #aaa;
-}
-.modal-close:hover {
-  color: #fff;
+.file-input-container {
+  margin-bottom: 15px;
 }
