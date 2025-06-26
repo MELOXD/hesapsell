@@ -1,35 +1,48 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>LOL Hesap Vitrini</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
   <script src="firebase-config.js"></script>
 </head>
 <body>
+  <nav>
+    <a href="index.html">Ana Sayfa</a>
+    <a href="admin.html">Admin Giriş</a>
+    <a href="dashboard.html">Admin Panel</a>
+  </nav>
+
   <div class="container">
     <h1>Satılık LOL Hesapları</h1>
     <div id="account-list" class="account-list"></div>
   </div>
+
   <script>
-    db.collection("accounts").get().then(snapshot => {
+    db.collection("accounts").orderBy("rankIndex", "asc").get().then(snapshot => {
       const list = document.getElementById("account-list");
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const card = document.createElement("div");
-        card.className = "account-card";
-        card.innerHTML = `
-          <a href="account.html?id=${doc.id}">
-            <img src="${data.image}" alt="Hesap Görseli">
+      if (snapshot.empty) {
+        list.innerHTML = "<p>Henüz hesap eklenmemiş.</p>";
+      } else {
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const card = document.createElement("a");
+          card.className = "account-card";
+          card.href = `account.html?id=${doc.id}`;
+          card.innerHTML = `
+            <img src="${data.imageUrl || data.image}" alt="Hesap Görseli" />
             <h2>${data.title}</h2>
             <p><strong>Lig:</strong> ${data.rank}</p>
             <p><strong>Fiyat:</strong> ${data.price} TL</p>
-          </a>
-        `;
-        list.appendChild(card);
-      });
+          `;
+          list.appendChild(card);
+        });
+      }
+    }).catch(err => {
+      console.error("Firestore verisi okunamadı:", err);
+      document.getElementById("account-list").innerHTML = "<p>Veri alınırken hata oluştu.</p>";
     });
   </script>
 </body>
