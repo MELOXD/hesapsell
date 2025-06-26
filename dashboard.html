@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Admin Panel</title>
-  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="../style.css">
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
@@ -16,30 +16,23 @@
     <span id="user-menu-container" style="margin-left:auto;"></span>
   </nav>
 
-  <div class="container" style="max-width: 700px;">
+  <div class="container" style="max-width: 700px; margin-top:20px;">
     <h1>Admin Dashboard</h1>
     <button id="logout-btn" style="float:right;">Çıkış Yap</button>
-
     <h2>Hesap Ekle</h2>
-    <form id="add-form" style="max-width:600px;">
+    <form id="add-form">
       <input type="text" id="title" placeholder="Başlık" required />
       <input type="number" id="price" placeholder="Fiyat" required />
       <input type="text" id="region" placeholder="Bölge" required />
       <select id="rank" required>
-        <option>IRON</option>
-        <option>BRONZE</option>
-        <option>SILVER</option>
-        <option>GOLD</option>
-        <option>PLATINUM</option>
-        <option>EMERALD</option>
-        <option>DIAMOND</option>
-        <option>MASTER</option>
-        <option>GRANDMASTER</option>
+        <option>IRON</option><option>BRONZE</option><option>SILVER</option>
+        <option>GOLD</option><option>PLATINUM</option><option>EMERALD</option>
+        <option>DIAMOND</option><option>MASTER</option><option>GRANDMASTER</option>
         <option>CHALLENGER</option>
       </select>
       <input type="number" id="champions" placeholder="Şampiyon Sayısı" required />
       <input type="number" id="skins" placeholder="Skin Sayısı" required />
-      <label for="imageFile">Hesap Görseli (Dosya):</label>
+      <label for="imageFile">Görsel:</label>
       <input type="file" id="imageFile" accept="image/*" required />
       <label><input type="checkbox" id="email_verified" /> E-posta Doğrulandı</label>
       <button type="submit">Kaydet</button>
@@ -51,33 +44,20 @@
 
   <script>
     const adminEmail = "meloboost1@gmail.com";
-
-    const userMenuContainer = document.getElementById("user-menu-container");
+    const userMenu = document.getElementById("user-menu-container");
     const logoutBtn = document.getElementById("logout-btn");
     const addForm = document.getElementById("add-form");
     const accountsList = document.getElementById("accounts-list");
 
-    // Kullanıcı kontrolü ve yetkilendirme
     auth.onAuthStateChanged(user => {
-      if (!user) {
-        window.location.href = "../index.html";
+      if (!user || user.email !== adminEmail) {
+        alert("Yetkisiz erişim! Yönlendiriliyorsunuz.");
+        auth.signOut().finally(() => window.location = "../index.html");
         return;
       }
 
-      if (user.email !== adminEmail) {
-        alert("Bu sayfaya erişim yetkiniz yok.");
-        auth.signOut();
-        window.location.href = "../index.html";
-        return;
-      }
-
-      userMenuContainer.innerHTML = `
-        Hoşgeldin, ${user.email}
-        <button id="btn-logout" style="margin-left:15px;">Çıkış Yap</button>
-      `;
-
+      userMenu.innerHTML = `Hoşgeldin, ${user.email} <button id="btn-logout" style="margin-left:10px;">Çıkış Yap</button>`;
       document.getElementById("btn-logout").onclick = () => auth.signOut();
-
       loadAccounts();
     });
 
@@ -85,5 +65,62 @@
 
     function loadAccounts() {
       accountsList.innerHTML = "Yükleniyor...";
-      const rankOrder = [
-        "IRON","BRONZE","SILVER","GOLD","PLATINUM","EMERALD","DIAMOND","MASTER","GRANDMASTER
+      db.collection("accounts").orderBy("rankIndex", "asc").get()
+        .then(snap => {
+          accountsList.innerHTML = "";
+          snap.forEach(doc => {
+            const d = doc.data(), el = document.createElement("div");
+            el.innerHTML = `<strong>${d.title}</strong> — ${d.rank} — ${d.price} TL
+              <button style="margin-left:10px;" onclick="deleteAccount(event,'${doc.id}')">Sil</button>`;
+            el.onclick = () => window.location = `../account.html?id=${doc.id}`;
+            el.style.padding = "8px"; el.style.marginBottom="8px";
+            el.style.border="1px solid #ccc"; el.style.cursor="pointer";
+            accountsList.append(el);
+          });
+        })
+        .catch(err => {
+          accountsList.innerText = "Yüklenemedi.";
+          console.error(err);
+        });
+    }
+
+    function deleteAccount(e, id) {
+      e.stopPropagation();
+      if (confirm("Silinsin mi?")) {
+        db.collection("accounts").doc(id).delete()
+          .then(loadAccounts)
+          .catch(err => alert("Hata: " + err.message));
+      }
+    }
+
+    addForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const file = document.getElementById("imageFile").files[0];
+      if (!file) return alert("Görsel seçin");
+
+      const storageRef = storage.ref();
+      const url = await storageRef.child('accounts/'+Date.now()+'_'+file.name).put(file)
+        .then(ref => ref.getDownloadURL());
+
+      const data = {
+        title: document.getElementById("title").value.trim(),
+        price: +document.getElementById("price").value,
+        region: document.getElementById("region").value.trim(),
+        rank: document.getElementById("rank").value,
+        rankIndex: ["IRON","BRONZE","SILVER","GOLD","PLATINUM","EMERALD","DIAMOND","MASTER","GRANDMASTER","CHALLENGER"].indexOf(document.getElementById("rank").value),
+        champions: +document.getElementById("champions").value,
+        skins: +document.getElementById("skins").value,
+        imageUrl: url,
+        email_verified: document.getElementById("email_verified").checked
+      };
+
+      db.collection("accounts").add(data)
+        .then(() => {
+          addForm.reset();
+          loadAccounts();
+        })
+        .catch(err => alert("Hata: "+err.message));
+    });
+  </script>
+</body>
+</html>
