@@ -11,8 +11,7 @@
 <body>
   <nav>
     <a href="index.html">Ana Sayfa</a>
-    <a href="admin.html">Admin Giriş</a>
-    <a href="dashboard.html">Admin Panel</a>
+    <span id="user-menu-container" style="margin-left:auto;"></span>
   </nav>
 
   <div class="container">
@@ -23,6 +22,25 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
+
+    function updateUserMenu(user) {
+      const container = document.getElementById("user-menu-container");
+      if (!user) {
+        container.innerHTML = `<a href="index.html" style="color:#fff;">Ana Sayfa</a>`;
+      } else {
+        const isAdmin = user.email === "meloboost1@gmail.com";
+        container.innerHTML = `
+          Hoşgeldin, ${user.email}
+          ${isAdmin ? '<a href="admin/dashboard.html" style="color:#fff; margin-left:15px;">Admin Panel</a>' : ''}
+          <button id="btn-logout" style="margin-left:15px;">Çıkış Yap</button>
+        `;
+        document.getElementById("btn-logout").onclick = () => auth.signOut();
+      }
+    }
+
+    auth.onAuthStateChanged(user => {
+      updateUserMenu(user);
+    });
 
     if (!id) {
       document.getElementById("account-detail").innerHTML = "<p>Hesap ID bulunamadı.</p>";
@@ -36,7 +54,7 @@
         const detail = document.getElementById("account-detail");
         detail.innerHTML = `
           <h1>${data.title}</h1>
-          <img src="${data.imageUrl || data.image}" alt="Hesap Görseli" style="width:100%; max-width:400px; border-radius:10px;" />
+          <img src="${data.imageUrl}" alt="Hesap Görseli" style="width:100%; max-width:400px; border-radius:10px;" />
           <p><strong>Fiyat:</strong> ${data.price} TL</p>
           <p><strong>Bölge:</strong> ${data.region}</p>
           <p><strong>Lig:</strong> ${data.rank}</p>
