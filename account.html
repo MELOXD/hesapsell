@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Hesap Detayları</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div id="account-detail"></div>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+
+    db.collection("accounts").doc(id).get().then(doc => {
+      const data = doc.data();
+      const detail = document.getElementById("account-detail");
+      detail.innerHTML = `
+        <h1>${data.title}</h1>
+        <img src="${data.image}" style="width:100%; max-width:400px; border-radius:10px;">
+        <p><strong>Fiyat:</strong> ${data.price} TL</p>
+        <p><strong>Bölge:</strong> ${data.region}</p>
+        <p><strong>Lig:</strong> ${data.rank}</p>
+        <p><strong>Şampiyon:</strong> ${data.champions}</p>
+        <p><strong>Skin:</strong> ${data.skins}</p>
+        <p><strong>E-Posta:</strong> ${data.email_verified ? "Doğrulandı" : "Yok"}</p>
+        <a href="index.html">← Geri Dön</a>
+      `;
+    });
+  </script>
+</body>
+</html>
